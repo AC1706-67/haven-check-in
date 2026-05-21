@@ -102,6 +102,11 @@ function App() {
     setSigned(false)
   }
 
+  const handleNewParticipant = () => {
+    setUserType('new')
+    setScreen('disclosure')
+  }
+
   const resetAll = () => {
     setScreen('signin')
     setCardNumber('')
@@ -426,29 +431,47 @@ function App() {
               </div>
 
               <div className="field-group">
-                <label className="field-label">Annual Gross Family Income</label>
-                <div className="income-row">
+                <label className="field-label">
+                  Household Income
+                  <span style={{fontSize:'11px', fontWeight:400, color:'var(--text-muted)', marginLeft:'6px'}}>
+                    (for food assistance eligibility only)
+                  </span>
+                </label>
+                <label className="prefer-not" style={{marginBottom:'10px'}}>
                   <input
-                    className="input input-sm"
-                    type="text"
-                    placeholder="Amount"
-                    value={incomeAmount}
-                    onChange={e => setIncomeAmount(e.target.value)}
+                    type="checkbox"
+                    checked={incomeAmount === 'none'}
+                    onChange={e => {
+                      setIncomeAmount(e.target.checked ? 'none' : '')
+                      setIncomePeriod('')
+                    }}
                   />
-                  <div className="radio-row income-period">
-                    {['Yearly', 'Monthly', 'Weekly'].map(p => (
-                      <label key={p} className={`radio-item ${incomePeriod === p ? 'selected' : ''}`}>
-                        <input
-                          type="radio"
-                          name="incomePeriod"
-                          checked={incomePeriod === p}
-                          onChange={() => setIncomePeriod(p)}
-                        />
-                        {p}
-                      </label>
-                    ))}
+                  No income / Prefer not to say
+                </label>
+                {incomeAmount !== 'none' && (
+                  <div className="income-row">
+                    <input
+                      className="input input-sm"
+                      type="text"
+                      placeholder="Amount"
+                      value={incomeAmount}
+                      onChange={e => setIncomeAmount(e.target.value)}
+                    />
+                    <div className="radio-row income-period">
+                      {['Yearly', 'Monthly', 'Weekly'].map(p => (
+                        <label key={p} className={`radio-item ${incomePeriod === p ? 'selected' : ''}`}>
+                          <input
+                            type="radio"
+                            name="incomePeriod"
+                            checked={incomePeriod === p}
+                            onChange={() => setIncomePeriod(p)}
+                          />
+                          {p}
+                        </label>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               <div className="field-group">
