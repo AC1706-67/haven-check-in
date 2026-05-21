@@ -296,8 +296,13 @@ body {
 .signature-box:hover { border-color: var(--accent); }
 
 .signature-prompt {
-  font-size: 13px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
   color: var(--text-muted);
+  pointer-events: none;
 }
 
 .consent-date {
@@ -470,25 +475,13 @@ body {
   cursor: crosshair;
 }
 
-.signature-wrapper:hover {
-  border-color: var(--accent);
-}
+.signature-wrapper:hover { border-color: var(--accent); }
 
 .signature-canvas {
   display: block;
   width: 100%;
   height: 100px;
   touch-action: none;
-}
-
-.signature-prompt {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 14px;
-  color: var(--text-muted);
-  pointer-events: none;
 }
 
 .btn-clear {
@@ -502,13 +495,111 @@ body {
   font-family: 'Outfit', sans-serif;
 }
 
-.btn-clear:hover {
-  color: var(--danger);
-}
+.btn-clear:hover { color: var(--danger); }
 
 .sign-reminder {
   text-align: center;
   font-size: 12px;
   color: var(--text-muted);
   margin-top: 8px;
+}
+
+/* ─── NEW: Form sections ─────────────────────────────────────── */
+
+.form-section {
+  margin-bottom: 32px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--border);
+}
+
+.form-section:last-of-type {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.form-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ─── NEW: 42 CFR Part 2 section ─────────────────────────────── */
+
+.cfr-section {
+  background: #fbbf2408;
+  border: 1px solid #fbbf2430;
+  border-radius: var(--radius-sm);
+  padding: 18px 18px 4px;
+  margin-bottom: 32px;
+}
+
+.cfr-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--warning);
+  background: #fbbf2422;
+  border: 1px solid #fbbf2440;
+  padding: 3px 10px;
+  border-radius: 100px;
+  text-transform: uppercase;
+}
+
+.cfr-note {
+  font-size: 12px;
+  color: #fbbf24aa;
+  line-height: 1.5;
+  margin-bottom: 20px;
+  margin-top: -8px;
+}
+
+/* ─── NEW: Income row ─────────────────────────────────────────── */
+
+.income-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.income-period {
+  flex-direction: row !important;
+  gap: 8px !important;
+}
+
+.income-period .radio-item {
+  flex: 1;
+  justify-content: center;
+  font-size: 13px;
+  padding: 10px 8px;
+}
+
+.input-sm {
+  max-width: 180px;
+}
+
+/* ─── NEW: Active states for checkbox and radio items ─────────── */
+
+.checkbox-item.checked {
+  border-color: var(--accent-glow);
+  background: var(--accent-dim);
+}
+
+.radio-item.selected {
+  border-color: var(--accent-glow);
+  background: var(--accent-dim);
+}
+
+/* ─── NEW: Follow-up questions (overdose sub-questions) ───────── */
+
+.follow-up {
+  margin-left: 16px;
+  padding-left: 16px;
+  border-left: 2px solid var(--accent-glow);
 }
