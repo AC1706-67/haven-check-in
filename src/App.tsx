@@ -167,13 +167,12 @@ function App() {
   )
 
   // ─── Naloxone quantity display ─────────────────────────────────
-  const nxDisplayQty = nxQuantity === 'other'
-    ? `${nxCustomQty} units`
-    : nxQuantity === 'full'
-    ? '1 full case (12 units)'
-    : nxQuantity === 'half'
-    ? '1 half case (6 units)'
-    : ''
+  const nxCaseCount = Number(nxQuantity) || 0
+  const nxSingleCount = Number(nxCustomQty) || 0
+  const nxDisplayQty = [
+    nxCaseCount > 0 ? `${nxCaseCount} case${nxCaseCount > 1 ? 's' : ''} (${nxCaseCount * 12} units)` : '',
+    nxSingleCount > 0 ? `${nxSingleCount} single${nxSingleCount > 1 ? 's' : ''}` : '',
+  ].filter(Boolean).join(' + ')
 
   return (
     <div className="app">
@@ -589,9 +588,8 @@ function App() {
               <label className="field-label">Quantity Picked Up Today <span className="req">*</span></label>
               <div className="nx-qty-grid">
                 {[
-                  { key: 'full', label: 'Full Case', sub: '12 units' },
-                  { key: 'half', label: 'Half Case', sub: '6 units' },
-                  { key: 'other', label: 'Other', sub: 'enter amount' },
+                  { key: 'cases', label: 'Cases', sub: '12 units each' },
+                  { key: 'singles', label: 'Singles', sub: 'individual units' },
                 ].map(opt => (
                   <label
                     key={opt.key}
@@ -603,13 +601,25 @@ function App() {
                   </label>
                 ))}
               </div>
-              {nxQuantity === 'other' && (
+              {nxQuantity === 'cases' && (
                 <div style={{ marginTop: '12px' }}>
                   <input
                     className="input input-sm"
                     type="number"
                     min={1}
-                    placeholder="Number of units"
+                    placeholder="Number of cases"
+                    value={nxCustomQty}
+                    onChange={e => setNxCustomQty(e.target.value)}
+                  />
+                </div>
+              )}
+              {nxQuantity === 'singles' && (
+                <div style={{ marginTop: '12px' }}>
+                  <input
+                    className="input input-sm"
+                    type="number"
+                    min={1}
+                    placeholder="Number of singles"
                     value={nxCustomQty}
                     onChange={e => setNxCustomQty(e.target.value)}
                   />
@@ -621,7 +631,7 @@ function App() {
               <button className="btn btn-ghost" onClick={() => setScreen('signin')}>Back</button>
               <button
                 className="btn btn-primary"
-                disabled={!nxQuantity || (nxQuantity === 'other' && !nxCustomQty.trim())}
+                disabled={!nxQuantity.trim() || Number(nxQuantity) < 1}
                 onClick={() => setScreen('naloxone-confirmation')}
               >
                 Confirm Pickup
