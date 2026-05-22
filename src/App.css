@@ -603,3 +603,25 @@ body {
   padding-left: 16px;
   border-left: 2px solid var(--accent-glow);
 }
+/* ─── NALOXONE HUB STYLES ─────────────────────────────────────── */
+.nx-badge { color: #16a34a; background: #16a34a18; border-color: #16a34a44; }
+
+.nx-card-info { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 8px; }
+.nx-info-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.nx-info-row:last-child { border-bottom: none; }
+.nx-info-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+.nx-info-value { font-size: 14px; font-weight: 600; color: var(--text); }
+
+.nx-qty-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.nx-qty-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px 8px; cursor: pointer; transition: all 0.2s; text-align: center; }
+.nx-qty-item.selected { border-color: #16a34a44; background: #16a34a18; }
+.nx-qty-label { font-size: 14px; font-weight: 600; color: var(--text); }
+.nx-qty-sub { font-size: 11px; color: var(--text-muted); }
+
+.nx-check-icon { background: #16a34a !important; }
+
+.nx-summary { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 24px; text-align: left; }
+.nx-summary-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.nx-summary-row:last-child { border-bottom: none; }
+.nx-summary-label { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+.nx-summary-value { font-size: 14px; font-weight: 600; color: #16a34a; }
