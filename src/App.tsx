@@ -51,7 +51,7 @@ function App() {
   // ─── Naloxone Hub (NX- cards) ─────────────────────────────────
   const [nxQuantity, setNxQuantity] = useState('')
   const [nxCustomQty, setNxCustomQty] = useState('')
-  const [nxKitType, setNxKitType] = useState('Narcan Nasal Spray')
+  const [nxKitType, setNxKitType] = useState('Naloxone Nasal Spray')
 
   // ─── Confirmation ─────────────────────────────────────────────
   const [issuedCard] = useState(`HC-${Math.floor(100000 + Math.random() * 900000)}`)
@@ -143,7 +143,7 @@ function App() {
     setNarcanGiven('')
     setNxQuantity('')
     setNxCustomQty('')
-    setNxKitType('Narcan Nasal Spray')
+    setNxKitType('Naloxone Nasal Spray')
   }
 
   // ─── Reusable Radio Group ─────────────────────────────────────
@@ -473,7 +473,7 @@ function App() {
               <div className="field-group">
                 <label className="field-label">Services received today <span className="req">*</span></label>
                 <div className="checkbox-grid">
-                  {['Shower', 'TEPAP Food', 'Narcan / Naloxone', 'Clothing', 'Mail Pickup', 'Referral'].map(s => (
+                  {['Shower', 'TEPAP Food', 'Naloxone', 'Clothing', 'Mail Pickup', 'Referral'].map(s => (
                     <label key={s} className={`checkbox-item ${services.includes(s) ? 'checked' : ''}`}>
                       <input type="checkbox" checked={services.includes(s)} onChange={() => toggleItem(services, setServices, s)} />
                       {s}
@@ -528,7 +528,7 @@ function App() {
                     <RadioGroup name="personSurvived" options={['Yes', 'No', 'Unknown']} value={personSurvived} onChange={setPersonSurvived} />
                   </div>
                   <div className="field-group follow-up">
-                    <label className="field-label">Was Narcan (naloxone) given?</label>
+                    <label className="field-label">Was Naloxone given?</label>
                     <YNP name="narcanGiven" value={narcanGiven} onChange={setNarcanGiven} />
                   </div>
                 </>
@@ -606,10 +606,6 @@ function App() {
               <div className="nx-summary-row">
                 <span className="nx-summary-label">Card</span>
                 <span className="nx-summary-value">{cardNumber.toUpperCase()}</span>
-              </div>
-              <div className="nx-summary-row">
-                <span className="nx-summary-label">Kit Type</span>
-                <span className="nx-summary-value">{nxKitType}</span>
               </div>
               <div className="nx-summary-row">
                 <span className="nx-summary-label">Quantity</span>
