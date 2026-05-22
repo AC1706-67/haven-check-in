@@ -573,69 +573,17 @@ function App() {
                 <span className="nx-info-value">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
               </div>
             </div>
-
             <div className="field-group" style={{ marginTop: '24px' }}>
-              <label className="field-label">Kit Type <span className="req">*</span></label>
-              <RadioGroup
-                name="nxKitType"
-                options={['Narcan Nasal Spray', 'Injectable Naloxone', 'Mixed Kit']}
-                value={nxKitType}
-                onChange={setNxKitType}
-              />
+              <label className="field-label">Cases Distributed <span className="req">*</span></label>
+              <input className="input input-sm" type="number" min={0} placeholder="Number of cases (12 units each)" value={nxQuantity} onChange={e => setNxQuantity(e.target.value)} />
             </div>
-
             <div className="field-group">
-              <label className="field-label">Quantity Picked Up Today <span className="req">*</span></label>
-              <div className="nx-qty-grid">
-                {[
-                  { key: 'cases', label: 'Cases', sub: '12 units each' },
-                  { key: 'singles', label: 'Singles', sub: 'individual units' },
-                ].map(opt => (
-                  <label
-                    key={opt.key}
-                    className={`nx-qty-item ${nxQuantity === opt.key ? 'selected' : ''}`}
-                    onClick={() => setNxQuantity(opt.key)}
-                  >
-                    <span className="nx-qty-label">{opt.label}</span>
-                    <span className="nx-qty-sub">{opt.sub}</span>
-                  </label>
-                ))}
-              </div>
-              {nxQuantity === 'cases' && (
-                <div style={{ marginTop: '12px' }}>
-                  <input
-                    className="input input-sm"
-                    type="number"
-                    min={1}
-                    placeholder="Number of cases"
-                    value={nxCustomQty}
-                    onChange={e => setNxCustomQty(e.target.value)}
-                  />
-                </div>
-              )}
-              {nxQuantity === 'singles' && (
-                <div style={{ marginTop: '12px' }}>
-                  <input
-                    className="input input-sm"
-                    type="number"
-                    min={1}
-                    placeholder="Number of singles"
-                    value={nxCustomQty}
-                    onChange={e => setNxCustomQty(e.target.value)}
-                  />
-                </div>
-              )}
+              <label className="field-label">Singles Distributed <span className="voluntary">optional</span></label>
+              <input className="input input-sm" type="number" min={0} placeholder="Number of individual units" value={nxCustomQty} onChange={e => setNxCustomQty(e.target.value)} />
             </div>
-
             <div className="btn-row">
               <button className="btn btn-ghost" onClick={() => setScreen('signin')}>Back</button>
-              <button
-                className="btn btn-primary"
-                disabled={!nxQuantity.trim() || Number(nxQuantity) < 1}
-                onClick={() => setScreen('naloxone-confirmation')}
-              >
-                Confirm Pickup
-              </button>
+              <button className="btn btn-primary" disabled={!nxQuantity.trim() || Number(nxQuantity) < 1} onClick={() => setScreen('naloxone-confirmation')}>Confirm Pickup</button>
             </div>
           </div>
         </div>
