@@ -1,25 +1,29 @@
-﻿import { useState, useRef } from 'react'
+import { useState, useRef } from 'react'
 import './App.css'
+import { enrollParticipant, getParticipantByCard, getDemographics, updateDemographics, generateCardNumber } from './services/participants'
+import { createSession } from './services/sessions'
+import { recordVisit } from './services/visits'
+import { recordPickup } from './services/naloxone'
 
 type Screen = 'signin' | 'disclosure' | 'demographics' | 'questionnaire' | 'confirmation' | 'naloxone' | 'naloxone-confirmation'
 type UserType = 'new' | 'returning' | 'naloxone' | null
 
 function App() {
-  // ─── Navigation ───────────────────────────────────────────────
+  // --- Navigation -----------------------------------------------
   const [screen, setScreen] = useState<Screen>('signin')
   const [userType, setUserType] = useState<UserType>(null)
 
-  // ─── Screen 1: Sign-in ────────────────────────────────────────
+  // --- Screen 1: Sign-in ----------------------------------------
   const [cardNumber, setCardNumber] = useState('')
   const [firstName, setFirstName] = useState('')
   const [preferNotName, setPreferNotName] = useState(false)
 
-  // ─── Screen 2: 42 CFR Disclosure / Signature ──────────────────
+  // --- Screen 2: 42 CFR Disclosure / Signature ------------------
   const [signed, setSigned] = useState(false)
   const [isDrawing, setIsDrawing] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  // ─── Screen 3A: Demographics (collected ONCE at enrollment) ───
+  // --- Screen 3A: Demographics (collected ONCE at enrollment) ---
   const [address, setAddress] = useState('')
   const [preferNotAddress, setPreferNotAddress] = useState(false)
   const [zipCode, setZipCode] = useState('')
@@ -34,10 +38,10 @@ function App() {
   const [gender, setGender] = useState('')
   const [race, setRace] = useState<string[]>([])
   const [ethnicity, setEthnicity] = useState('')
-  const [insurance, setInsurance] = useState('')
+  const [insurance, setInsurance] = useState<string[]>([])
   const [indicators, setIndicators] = useState<string[]>([])
 
-  // ─── Screen 3B: Visit Questions (every visit) ─────────────────
+  // --- Screen 3B: Visit Questions (every visit) -----------------
   const [services, setServices] = useState<string[]>([])
   const [unhoused, setUnhoused] = useState('')
   const [opioidUser, setOpioidUser] = useState('')
@@ -47,16 +51,21 @@ function App() {
   const [overdoseWitnessed, setOverdoseWitnessed] = useState('')
   const [personSurvived, setPersonSurvived] = useState('')
   const [narcanGiven, setNarcanGiven] = useState('')
+  const [overdoseZip, setOverdoseZip] = useState('')
 
-  // ─── Naloxone Hub (NX- cards) ─────────────────────────────────
+  // --- Naloxone Hub (NX- cards) ---------------------------------
   const [nxQuantity, setNxQuantity] = useState('')
   const [nxCustomQty, setNxCustomQty] = useState('')
   const [nxKitType, setNxKitType] = useState('Naloxone Nasal Spray')
 
-  // ─── Confirmation ─────────────────────────────────────────────
-  const [issuedCard] = useState(`HC-${Math.floor(100000 + Math.random() * 900000)}`)
+  // --- Confirmation ---------------------------------------------
+  const [issuedCard, setIssuedCard] = useState('')
+  const [participantId, setParticipantId] = useState<string | null>(null)
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  // ─── Helpers ──────────────────────────────────────────────────
+  // --- Helpers --------------------------------------------------
   const toggleItem = (
     list: string[],
     setList: (v: string[]) => void,
@@ -65,19 +74,124 @@ function App() {
     setList(list.includes(value) ? list.filter(x => x !== value) : [...list, value])
   }
 
-  // ─── Card prefix routing ───────────────────────────────────────
-  const handleCardCheckIn = () => {
+  // --- Card prefix routing ---------------------------------------
+  const handleCardCheckIn = async () => {
     const upper = cardNumber.trim().toUpperCase()
     if (upper.startsWith('NX-')) {
       setUserType('naloxone')
       setScreen('naloxone')
-    } else {
-      setUserType('returning')
-      setScreen('questionnaire')
+      return
     }
+    setIsLoading(true)
+    setError(null)
+    const participant = await getParticipantByCard(upper)
+    setIsLoading(false)
+    if (!participant) {
+      setError('Card not found. Please check the number or begin a new enrollment.')
+      return
+    }
+    setParticipantId(participant.id)
+    // Pre-populate substance use answers from their demographics
+    const demo = await getDemographics(participant.id)
+    if (demo) {
+      if (demo.opioid_user) setOpioidUser(demo.opioid_user)
+      if (demo.stimulant_user) setStimulantUser(demo.stimulant_user)
+      if (demo.referred_to_mat) setReferredToMAT(demo.referred_to_mat)
+      if (demo.on_mat) setOnMAT(demo.on_mat)
+      if (demo.unhoused) setUnhoused(demo.unhoused)
+    }
+    setUserType('returning')
+    setScreen('questionnaire')
   }
 
-  // ─── Signature Canvas ─────────────────────────────────────────
+  const handleDemographicsContinue = async () => {
+    setIsLoading(true)
+    setError(null)
+
+    const cardNum = await generateCardNumber()
+
+    const participant = await enrollParticipant(cardNum, {
+      gender,
+      race_ethnicity: [...race, ethnicity].filter(Boolean).join(', '),
+      age_range: ageGroup,
+      housing_status: preferNotAddress ? 'Unhoused / Prefer not to say' : address ? 'Housed' : '',
+      veteran_status: false,
+      preferred_language: 'English',
+    })
+
+    setIsLoading(false)
+    if (!participant) {
+      setError('Enrollment failed. Please try again.')
+      return
+    }
+    setParticipantId(participant.id)
+    setIssuedCard(cardNum)
+    setScreen('questionnaire')
+  }
+
+  const handleSubmitCheckIn = async () => {
+    if (!participantId) return
+    setIsLoading(true)
+    setError(null)
+    let currentSessionId = sessionId
+    if (!currentSessionId) {
+      const session = await createSession('ODC Staff')
+      if (session) {
+        currentSessionId = session.id
+        setSessionId(session.id)
+      }
+    }
+    const success = await recordVisit({
+      session_id: currentSessionId ?? '',
+      participant_id: participantId,
+      shower: services.includes('Shower'),
+      tepap_food: services.includes('TEPAP Food'),
+      narcan_received: services.includes('Naloxone'),
+      clothing_pickup: services.includes('Clothing'),
+      mail_pickup: services.includes('Mail Pickup'),
+      referral_made: services.includes('Referral'),
+      consent_signed: signed,
+      recent_overdose: overdoseWitnessed === 'Yes',
+      overdose_zip: overdoseZip || undefined,
+    })
+    setIsLoading(false)
+    if (!success) {
+      setError('Failed to record visit. Please try again.')
+      return
+    }
+    // Save updated substance use answers back to demographics
+    if (participantId) {
+      await updateDemographics(participantId, {
+        opioid_user: opioidUser || undefined,
+        stimulant_user: stimulantUser || undefined,
+        referred_to_mat: referredToMAT || undefined,
+        on_mat: onMAT || undefined,
+        unhoused: unhoused || undefined,
+      })
+    }
+    setScreen('confirmation')
+  }
+
+  const handleNaloxonePickup = async () => {
+    setIsLoading(true)
+    setError(null)
+    const totalUnits = (Number(nxQuantity) * 12) + Number(nxCustomQty || 0)
+    const success = await recordPickup({
+      org_id: null as any,
+      pickup_date: new Date().toISOString().split('T')[0],
+      units_picked_up: totalUnits,
+      recipient_org: cardNumber.toUpperCase(),
+      recorded_by: 'ODC Staff',
+    })
+    setIsLoading(false)
+    if (!success) {
+      setError('Failed to record pickup. Please try again.')
+      return
+    }
+    setScreen('naloxone-confirmation')
+  }
+
+    // --- Signature Canvas -----------------------------------------
   const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
     setIsDrawing(true)
     setSigned(true)
@@ -125,13 +239,45 @@ function App() {
   }
 
   const resetAll = () => {
+    // Navigation
     setScreen('signin')
+    setUserType(null)
+    setError(null)
+
+    // Sign-in
     setCardNumber('')
     setFirstName('')
     setPreferNotName(false)
-    setUserType(null)
+
+    // Supabase state
+    setParticipantId(null)
+    setSessionId(null)
+    setIssuedCard('')
+    setIsLoading(false)
+
+    // Disclosure
     setSigned(false)
     clearSignature()
+
+    // Demographics  ALL fields
+    setAddress('')
+    setPreferNotAddress(false)
+    setZipCode('')
+    setPhone('')
+    setPreferNotPhone(false)
+    setHouseholdSize('')
+    setCategoricalElig([])
+    setIncomeAmount('')
+    setIncomePeriod('')
+    setHouseholdCrisis('')
+    setAgeGroup('')
+    setGender('')
+    setRace([])
+    setEthnicity('')
+    setInsurance([])
+    setIndicators([])
+
+    // Visit questions
     setServices([])
     setUnhoused('')
     setOpioidUser('')
@@ -141,12 +287,15 @@ function App() {
     setOverdoseWitnessed('')
     setPersonSurvived('')
     setNarcanGiven('')
+    setOverdoseZip('')
+
+    // Naloxone
     setNxQuantity('')
     setNxCustomQty('')
     setNxKitType('Naloxone Nasal Spray')
   }
 
-  // ─── Reusable Radio Group ─────────────────────────────────────
+  // --- Reusable Radio Group -------------------------------------
   const RadioGroup = ({
     name, options, value, onChange,
   }: {
@@ -166,7 +315,7 @@ function App() {
     <RadioGroup name={name} options={['Yes', 'No', 'Prefer not to say']} value={value} onChange={onChange} />
   )
 
-  // ─── Naloxone quantity display ─────────────────────────────────
+  // --- Naloxone quantity display ---------------------------------
   const nxCaseCount = Number(nxQuantity) || 0
   const nxSingleCount = Number(nxCustomQty) || 0
   const nxDisplayQty = [
@@ -177,7 +326,7 @@ function App() {
   return (
     <div className="app">
 
-      {/* ── SCREEN 1: SIGN-IN ─────────────────────────────────── */}
+      {/* -- SCREEN 1: SIGN-IN ----------------------------------- */}
       {screen === 'signin' && (
         <div className="screen signin-screen">
           <div className="header">
@@ -189,7 +338,7 @@ function App() {
 
           <div className="card">
             <h2 className="card-title">Welcome</h2>
-            <p className="card-desc">Your visit is private. We collect only what is required by our funders —
+            <p className="card-desc">Your visit is private. We collect only what is required by our funders 
               and you control what gets shared.</p>
 
             <div className="section-label">Returning Participant</div>
@@ -241,17 +390,17 @@ function App() {
           </div>
 
           <div className="privacy-note">
-            🔒 Your identity is protected by zero-knowledge cryptography.
+            ?? Your identity is protected by zero-knowledge cryptography.
             No one can extract your personal information from this system.
           </div>
 
           <div className="session-info">
-            <span>Haven Check-In — MANO</span>
+            <span>Haven Check-In  MANO</span>
             <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
           </div>
         </div>
       )}
-      {/* ── SCREEN 2: 42 CFR DISCLOSURE ───────────────────────── */}
+      {/* -- SCREEN 2: 42 CFR DISCLOSURE ------------------------- */}
       {screen === 'disclosure' && (
         <div className="screen disclosure-screen">
           <div className="header">
@@ -260,7 +409,7 @@ function App() {
           </div>
 
           <div className="card">
-            <h2 className="card-title">42 CFR Part 2 — Confidentiality Notice</h2>
+            <h2 className="card-title">42 CFR Part 2  Confidentiality Notice</h2>
             <div className="disclosure-text">
               <p>The records of this program are protected under federal law and regulations governing Confidentiality of Substance Use Disorder Patient Records, 42 C.F.R. Part 2.</p>
               <p>These regulations prohibit this program from making any disclosure of your records without your written consent <strong>unless otherwise provided for in the regulations.</strong></p>
@@ -275,7 +424,7 @@ function App() {
                   onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing}
                   onMouseLeave={stopDrawing} onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing}
                 />
-                {!signed && <p className="signature-prompt">✍️ Sign here</p>}
+                {!signed && <p className="signature-prompt">?? Sign here</p>}
               </div>
               {signed && <button className="btn-clear" onClick={clearSignature}>Clear signature</button>}
               <p className="consent-date">Date: {new Date().toLocaleDateString()}</p>
@@ -292,7 +441,7 @@ function App() {
         </div>
       )}
 
-      {/* ── SCREEN 3A: DEMOGRAPHICS ───────────────────────────── */}
+      {/* -- SCREEN 3A: DEMOGRAPHICS ----------------------------- */}
       {screen === 'demographics' && (
         <div className="screen demographics-screen">
           <div className="header">
@@ -398,11 +547,11 @@ function App() {
             </div>
 
             <div className="form-section">
-              <div className="form-section-title">Demographics <span className="voluntary">— all voluntary</span></div>
+              <div className="form-section-title">Demographics <span className="voluntary"> all voluntary</span></div>
 
               <div className="field-group">
                 <label className="field-label">Age Group <span className="voluntary">voluntary</span></label>
-                <RadioGroup name="ageGroup" options={['Under 17', '18–24', '25–44', '45–64', '65+', 'Prefer not to say']} value={ageGroup} onChange={setAgeGroup} />
+                <RadioGroup name="ageGroup" options={['Under 17', '1824', '2544', '4564', '65+', 'Prefer not to say']} value={ageGroup} onChange={setAgeGroup} />
               </div>
 
               <div className="field-group">
@@ -429,7 +578,14 @@ function App() {
 
               <div className="field-group">
                 <label className="field-label">Insurance <span className="voluntary">voluntary</span></label>
-                <RadioGroup name="insurance" options={['Private', 'Medicaid', 'Medicare', 'Uninsured', 'Prefer not to say']} value={insurance} onChange={setInsurance} />
+                <div className="checkbox-grid">
+                  {['Private', 'Medicaid', 'Medicare', 'Uninsured', 'Prefer not to say'].map(opt => (
+                    <label key={opt} className={`checkbox-item ${insurance.includes(opt) ? 'checked' : ''}`}>
+                      <input type="checkbox" checked={insurance.includes(opt)} onChange={() => toggleItem(insurance, setInsurance, opt)} />
+                      {opt}
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div className="field-group">
@@ -447,15 +603,15 @@ function App() {
 
             <div className="btn-row">
               <button className="btn btn-ghost" onClick={() => setScreen('disclosure')}>Back</button>
-              <button className="btn btn-primary" onClick={() => setScreen('questionnaire')}>
-                Continue to Visit Info →
+              <button className="btn btn-primary" onClick={handleDemographicsContinue} disabled={isLoading}>
+                {isLoading ? 'Saving...' : 'Continue to Visit Info'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── SCREEN 3B: VISIT QUESTIONS ────────────────────────── */}
+      {/* -- SCREEN 3B: VISIT QUESTIONS -------------------------- */}
       {screen === 'questionnaire' && (
         <div className="screen questionnaire-screen">
           <div className="header">
@@ -465,7 +621,7 @@ function App() {
 
           <div className="card">
             <h2 className="card-title">Today's Visit</h2>
-            <p className="card-desc voluntary-note">⭐ Questions marked <span className="voluntary">voluntary</span> are never required. Answer only what you are comfortable with.</p>
+            <p className="card-desc voluntary-note">? Questions marked <span className="voluntary">voluntary</span> are never required. Answer only what you are comfortable with.</p>
 
             <div className="form-section">
               <div className="form-section-title">Services Today</div>
@@ -491,6 +647,12 @@ function App() {
             <div className="form-section cfr-section">
               <div className="form-section-title">Substance Use <span className="cfr-badge">42 CFR Part 2 Protected</span></div>
               <p className="cfr-note">Your answers are protected under federal law. This information cannot be shared without your written consent.</p>
+
+              {userType === 'returning' && (opioidUser || stimulantUser || referredToMAT || onMAT) && (
+                <p className="prefill-note">
+                  u{2713} Your answers from your last visit are pre-filled. Update anything that has changed.
+                </p>
+              )}
 
               <div className="field-group">
                 <label className="field-label">Are you an opioid user? <span className="voluntary">voluntary</span></label>
@@ -533,6 +695,22 @@ function App() {
                   </div>
                 </>
               )}
+
+              {overdoseWitnessed === 'Yes' && (
+                <>
+                  <div className="field-group follow-up">
+                    <label className="field-label">Zip code where overdose occurred</label>
+                    <input
+                      className="input input-sm"
+                      type="text"
+                      placeholder="e.g. 79901"
+                      maxLength={5}
+                      value={overdoseZip}
+                      onChange={e => setOverdoseZip(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="btn-row">
@@ -542,21 +720,21 @@ function App() {
               }}>
                 Back
               </button>
-              <button className="btn btn-primary" onClick={() => setScreen('confirmation')}>
-                Submit Check-In
+              <button className="btn btn-primary" onClick={handleSubmitCheckIn} disabled={isLoading || !participantId}>
+                {isLoading ? 'Saving...' : 'Submit Check-In'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── SCREEN NX: NALOXONE PICKUP ────────────────────────── */}
+      {/* -- SCREEN NX: NALOXONE PICKUP -------------------------- */}
       {screen === 'naloxone' && (
         <div className="screen naloxone-screen">
           <div className="header">
             <div className="org-badge nx-badge">NX HUB</div>
             <h1 className="app-title">MANO</h1>
-            <p className="app-subtitle">Naloxone Hub — Region 10</p>
+            <p className="app-subtitle">Naloxone Hub  Region 10</p>
             <p className="app-tagline">Recovery Alliance El Paso</p>
           </div>
 
@@ -583,13 +761,13 @@ function App() {
             </div>
             <div className="btn-row">
               <button className="btn btn-ghost" onClick={() => setScreen('signin')}>Back</button>
-              <button className="btn btn-primary" disabled={!nxQuantity.trim() || Number(nxQuantity) < 1} onClick={() => setScreen('naloxone-confirmation')}>Confirm Pickup</button>
+              <button className="btn btn-primary" disabled={!nxQuantity.trim() || Number(nxQuantity) < 1} onClick={handleNaloxonePickup}>Confirm Pickup</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── SCREEN NX-CONFIRM ─────────────────────────────────── */}
+      {/* -- SCREEN NX-CONFIRM ----------------------------------- */}
       {screen === 'naloxone-confirmation' && (
         <div className="screen confirmation-screen">
           <div className="header">
@@ -598,7 +776,7 @@ function App() {
           </div>
 
           <div className="card confirmation-card">
-            <div className="check-icon nx-check-icon">✓</div>
+            <div className="check-icon nx-check-icon">?</div>
             <h2 className="card-title">Pickup Recorded</h2>
             <p className="card-desc">This naloxone pickup has been logged to the Region 10 distribution record.</p>
 
@@ -622,7 +800,7 @@ function App() {
         </div>
       )}
 
-      {/* ── SCREEN 4: CONFIRMATION ────────────────────────────── */}
+      {/* -- SCREEN 4: CONFIRMATION ------------------------------ */}
       {screen === 'confirmation' && (
         <div className="screen confirmation-screen">
           <div className="header">
@@ -631,14 +809,14 @@ function App() {
           </div>
 
           <div className="card confirmation-card">
-            <div className="check-icon">✓</div>
+            <div className="check-icon">?</div>
             <h2 className="card-title">Check-In Complete</h2>
             <p className="card-desc">Your visit has been recorded privately. Your identity was never revealed.</p>
 
             <div className="credential-note">
-              🔐 This check-in has been added to your anonymous attendance credential.
+              ?? This check-in has been added to your anonymous attendance credential.
               You can use it to verify program participation for housing, employment,
-              or reentry — on your terms.
+              or reentry  on your terms.
             </div>
 
             {userType === 'new' && (

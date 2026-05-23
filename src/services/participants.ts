@@ -1,4 +1,4 @@
-﻿import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabase'
 
 export interface Participant {
   id: string
@@ -16,6 +16,11 @@ export interface Demographics {
   housing_status?: string
   veteran_status?: boolean
   preferred_language?: string
+  opioid_user?: string
+  stimulant_user?: string
+  referred_to_mat?: string
+  on_mat?: string
+  unhoused?: string
 }
 
 // Look up participant by card number (returning participant flow)

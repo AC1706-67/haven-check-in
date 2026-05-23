@@ -1,4 +1,4 @@
-﻿import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabase'
 
 export interface VisitData {
   session_id: string
@@ -15,6 +15,7 @@ export interface VisitData {
   consent_signature_url?: string
   recent_overdose?: boolean
   overdose_date?: string
+  overdose_zip?: string
 }
 
 // Check if participant already got a shower today (1/day rule)

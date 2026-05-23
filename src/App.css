@@ -625,3 +625,26 @@ body {
 .nx-summary-row:last-child { border-bottom: none; }
 .nx-summary-label { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
 .nx-summary-value { font-size: 14px; font-weight: 600; color: #16a34a; }
+
+/* ─── ERROR NOTE ──────────────────────────────────────────────── */
+.error-note {
+  background: #fff1f1;
+  border: 1px solid #ffcccc;
+  color: #cc0000;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* ─── PREFILL NOTE ────────────────────────────────────────────── */
+.prefill-note {
+  background: #f0f7ff;
+  border: 1px solid #cce0ff;
+  color: #0055cc;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
