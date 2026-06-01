@@ -177,12 +177,12 @@ function App() {
     setError(null)
     const totalUnits = (Number(nxQuantity) * 12) + Number(nxCustomQty || 0)
     const success = await recordPickup({
-      org_id: null as any,
+      org_id: '',
       pickup_date: new Date().toISOString().split('T')[0],
       units_picked_up: totalUnits,
       recipient_org: cardNumber.toUpperCase(),
       recorded_by: 'ODC Staff',
-    })
+    }, cardNumber.trim().toUpperCase())
     setIsLoading(false)
     if (!success) {
       setError('Failed to record pickup. Please try again.')
@@ -390,7 +390,7 @@ function App() {
           </div>
 
           <div className="privacy-note">
-            ?? Your identity is protected by zero-knowledge cryptography.
+             Your identity is protected by zero-knowledge cryptography.
             No one can extract your personal information from this system.
           </div>
 
@@ -621,7 +621,7 @@ function App() {
 
           <div className="card">
             <h2 className="card-title">Today's Visit</h2>
-            <p className="card-desc voluntary-note">? Questions marked <span className="voluntary">voluntary</span> are never required. Answer only what you are comfortable with.</p>
+            <p className="card-desc voluntary-note">Questions marked <span className="voluntary">voluntary</span> are never required. Answer only what you are comfortable with.</p>
 
             <div className="form-section">
               <div className="form-section-title">Services Today</div>
@@ -776,7 +776,7 @@ function App() {
           </div>
 
           <div className="card confirmation-card">
-            <div className="check-icon nx-check-icon">?</div>
+            <div className="check-icon nx-check-icon">{""}</div>
             <h2 className="card-title">Pickup Recorded</h2>
             <p className="card-desc">This naloxone pickup has been logged to the Region 10 distribution record.</p>
 
@@ -809,12 +809,12 @@ function App() {
           </div>
 
           <div className="card confirmation-card">
-            <div className="check-icon">?</div>
+            <div className="check-icon">{""}</div>
             <h2 className="card-title">Check-In Complete</h2>
             <p className="card-desc">Your visit has been recorded privately. Your identity was never revealed.</p>
 
             <div className="credential-note">
-              ?? This check-in has been added to your anonymous attendance credential.
+               This check-in has been added to your anonymous attendance credential.
               You can use it to verify program participation for housing, employment,
               or reentry  on your terms.
             </div>

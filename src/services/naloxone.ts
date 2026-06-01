@@ -50,7 +50,16 @@ export async function addOrg(org: Omit<NaloxoneOrg, 'id' | 'is_active'>): Promis
 }
 
 // Record a pickup
-export async function recordPickup(pickup: Omit<NaloxonePickup, 'id'>): Promise<boolean> {
+export async function recordPickup(pickup: Omit<NaloxonePickup, 'id'>, cardNumber?: string): Promise<boolean> {
+  // Look up org by card number if provided
+  if (cardNumber) {
+    const org = await getOrgByCardNumber(cardNumber)
+    if (!org) {
+      throw new Error('Card not registered. Contact the hub coordinator.')
+    }
+    pickup = { ...pickup, org_id: org.id }
+  }
+
   const { error: pickupError } = await supabase
     .from('hc_naloxone_pickups')
     .insert(pickup)
@@ -113,4 +122,26 @@ export async function setInventory(
     .upsert({ org_id: orgId, units_on_hand: units, last_updated: new Date().toISOString() })
 
   return !error
+}
+
+// Look up org by card number
+export async function getOrgByCardNumber(cardNumber: string) {
+  const { data, error } = await supabase
+    .from('hc_naloxone_orgs')
+    .select('id, card_number, is_active')
+    .eq('card_number', cardNumber)
+    .single()
+  if (error) return null
+  return data
+}
+
+// Register a new org card (coordinator use only)
+export async function registerNaloxoneCard(cardNumber: string) {
+  const { data, error } = await supabase
+    .from('hc_naloxone_orgs')
+    .insert({ card_number: cardNumber, is_active: true })
+    .select('id, card_number')
+    .single()
+  if (error) throw error
+  return data
 }
