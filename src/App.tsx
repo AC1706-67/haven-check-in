@@ -4,8 +4,9 @@ import { enrollParticipant, getParticipantByCard, getDemographics, updateDemogra
 import { createSession } from './services/sessions'
 import { recordVisit } from './services/visits'
 import { recordPickup } from './services/naloxone'
+import Dashboard from './pages/Dashboard'
 
-type Screen = 'signin' | 'disclosure' | 'demographics' | 'questionnaire' | 'confirmation' | 'naloxone' | 'naloxone-confirmation'
+type Screen = 'signin' | 'disclosure' | 'demographics' | 'questionnaire' | 'confirmation' | 'naloxone' | 'naloxone-confirmation' | 'dashboard'
 type UserType = 'new' | 'returning' | 'naloxone' | null
 
 function App() {
@@ -829,6 +830,36 @@ function App() {
 
             <button className="btn btn-primary" onClick={resetAll}>Done</button>
           </div>
+        </div>
+      )}
+
+      {/* -- SCREEN: DASHBOARD ---------------------------------- */}
+      {screen === 'dashboard' && <Dashboard />}
+
+      {/* -- BOTTOM NAV ----------------------------------------- */}
+      {(screen === 'signin' || screen === 'dashboard') && (
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0,
+          background: '#0F172A', borderTop: '1px solid #1E293B',
+          display: 'flex', justifyContent: 'space-around',
+          padding: '10px 0 20px', zIndex: 100,
+        }}>
+          <button onClick={() => setScreen('signin')} style={{
+            background: 'none', border: 'none', color: screen === 'signin' ? '#0D9488' : '#64748B',
+            fontSize: 11, fontFamily: 'monospace', cursor: 'pointer',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+          }}>
+            <span style={{ fontSize: 20 }}>{'🏥'}</span>
+            Check-In
+          </button>
+          <button onClick={() => setScreen('dashboard')} style={{
+            background: 'none', border: 'none', color: screen === 'dashboard' ? '#0D9488' : '#64748B',
+            fontSize: 11, fontFamily: 'monospace', cursor: 'pointer',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+          }}>
+            <span style={{ fontSize: 20 }}>{'📊'}</span>
+            Dashboard
+          </button>
         </div>
       )}
     </div>
