@@ -25,27 +25,37 @@ export interface Demographics {
 
 // Look up participant by card number (returning participant flow)
 export async function getParticipantByCard(cardNumber: string): Promise<Participant | null> {
-  const { data, error } = await supabase
-    .from('hc_participants')
-    .select('*')
-    .eq('card_number', cardNumber)
-    .eq('is_active', true)
-    .single()
+  try {
+    const { data, error } = await supabase
+      .from('hc_participants')
+      .select('*')
+      .eq('card_number', cardNumber)
+      .eq('is_active', true)
+      .maybeSingle()
 
-  if (error || !data) return null
-  return data
+    if (error || !data) return null
+    return data
+  } catch (e) {
+    console.error('getParticipantByCard threw:', e)
+    return null
+  }
 }
 
 // Get demographics for a participant
 export async function getDemographics(participantId: string): Promise<Demographics | null> {
-  const { data, error } = await supabase
-    .from('hc_demographics')
-    .select('*')
-    .eq('participant_id', participantId)
-    .single()
+  try {
+    const { data, error } = await supabase
+      .from('hc_demographics')
+      .select('*')
+      .eq('participant_id', participantId)
+      .maybeSingle()
 
-  if (error || !data) return null
-  return data
+    if (error || !data) return null
+    return data
+  } catch (e) {
+    console.error('getDemographics threw:', e)
+    return null
+  }
 }
 
 // Enroll new participant

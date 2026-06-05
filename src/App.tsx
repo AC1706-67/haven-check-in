@@ -354,11 +354,17 @@ function App() {
               <button
                 className="btn btn-secondary"
                 onClick={handleCardCheckIn}
-                disabled={!cardNumber.trim()}
+                disabled={!cardNumber.trim() || isLoading}
               >
                 Check In
               </button>
             </div>
+
+            {error && (
+              <p style={{ color: '#EF4444', fontSize: '13px', marginTop: '8px' }}>
+                {error}
+              </p>
+            )}
 
             <div className="divider"><span>or</span></div>
 
