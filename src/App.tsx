@@ -5,25 +5,20 @@ import { createSession } from './services/sessions'
 import { recordVisit } from './services/visits'
 import { recordPickup } from './services/naloxone'
 import Dashboard from './pages/Dashboard'
-
 type Screen = 'signin' | 'disclosure' | 'demographics' | 'questionnaire' | 'confirmation' | 'naloxone' | 'naloxone-confirmation' | 'dashboard'
 type UserType = 'new' | 'returning' | 'naloxone' | null
-
 function App() {
   // --- Navigation -----------------------------------------------
   const [screen, setScreen] = useState<Screen>('signin')
   const [userType, setUserType] = useState<UserType>(null)
-
   // --- Screen 1: Sign-in ----------------------------------------
   const [cardNumber, setCardNumber] = useState('')
   const [firstName, setFirstName] = useState('')
   const [preferNotName, setPreferNotName] = useState(false)
-
   // --- Screen 2: 42 CFR Disclosure / Signature ------------------
   const [signed, setSigned] = useState(false)
   const [isDrawing, setIsDrawing] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-
   // --- Screen 3A: Demographics (collected ONCE at enrollment) ---
   const [address, setAddress] = useState('')
   const [preferNotAddress, setPreferNotAddress] = useState(false)
@@ -41,7 +36,6 @@ function App() {
   const [ethnicity, setEthnicity] = useState('')
   const [insurance, setInsurance] = useState<string[]>([])
   const [indicators, setIndicators] = useState<string[]>([])
-
   // --- Screen 3B: Visit Questions (every visit) -----------------
   const [services, setServices] = useState<string[]>([])
   const [unhoused, setUnhoused] = useState('')
@@ -53,19 +47,17 @@ function App() {
   const [personSurvived, setPersonSurvived] = useState('')
   const [narcanGiven, setNarcanGiven] = useState('')
   const [overdoseZip, setOverdoseZip] = useState('')
-
   // --- Naloxone Hub (NX- cards) ---------------------------------
   const [nxQuantity, setNxQuantity] = useState('')
   const [nxCustomQty, setNxCustomQty] = useState('')
   const [nxKitType, setNxKitType] = useState('Naloxone Nasal Spray')
-
   // --- Confirmation ---------------------------------------------
   const [issuedCard, setIssuedCard] = useState('')
   const [participantId, setParticipantId] = useState<string | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
+  const [activeTab, setActiveTab] = useState<'checkin' | 'naloxone'>('checkin')
   // --- Helpers --------------------------------------------------
   const toggleItem = (
     list: string[],
@@ -74,7 +66,6 @@ function App() {
   ) => {
     setList(list.includes(value) ? list.filter(x => x !== value) : [...list, value])
   }
-
   // --- Card prefix routing ---------------------------------------
   const handleCardCheckIn = async () => {
     const upper = cardNumber.trim().toUpperCase()
@@ -104,13 +95,10 @@ function App() {
     setUserType('returning')
     setScreen('questionnaire')
   }
-
   const handleDemographicsContinue = async () => {
     setIsLoading(true)
     setError(null)
-
     const cardNum = await generateCardNumber()
-
     const participant = await enrollParticipant(cardNum, {
       gender,
       race_ethnicity: [...race, ethnicity].filter(Boolean).join(', '),
@@ -119,7 +107,6 @@ function App() {
       veteran_status: false,
       preferred_language: 'English',
     })
-
     setIsLoading(false)
     if (!participant) {
       setError('Enrollment failed. Please try again.')
@@ -129,7 +116,6 @@ function App() {
     setIssuedCard(cardNum)
     setScreen('questionnaire')
   }
-
   const handleSubmitCheckIn = async () => {
     if (!participantId) return
     setIsLoading(true)
@@ -172,7 +158,6 @@ function App() {
     }
     setScreen('confirmation')
   }
-
   const handleNaloxonePickup = async () => {
     setIsLoading(true)
     setError(null)
@@ -191,7 +176,6 @@ function App() {
     }
     setScreen('naloxone-confirmation')
   }
-
     // --- Signature Canvas -----------------------------------------
   const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
     setIsDrawing(true)
@@ -209,7 +193,6 @@ function App() {
     ctx.lineWidth = 2.5
     ctx.lineCap = 'round'
   }
-
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
     if (!isDrawing) return
     const canvas = canvasRef.current
@@ -222,9 +205,7 @@ function App() {
     ctx.lineTo(x, y)
     ctx.stroke()
   }
-
   const stopDrawing = () => setIsDrawing(false)
-
   const clearSignature = () => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -233,33 +214,28 @@ function App() {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     setSigned(false)
   }
-
   const handleNewParticipant = () => {
     setUserType('new')
     setScreen('disclosure')
   }
-
   const resetAll = () => {
     // Navigation
     setScreen('signin')
     setUserType(null)
     setError(null)
-
+    setActiveTab('checkin')
     // Sign-in
     setCardNumber('')
     setFirstName('')
     setPreferNotName(false)
-
     // Supabase state
     setParticipantId(null)
     setSessionId(null)
     setIssuedCard('')
     setIsLoading(false)
-
     // Disclosure
     setSigned(false)
     clearSignature()
-
     // Demographics  ALL fields
     setAddress('')
     setPreferNotAddress(false)
@@ -277,7 +253,6 @@ function App() {
     setEthnicity('')
     setInsurance([])
     setIndicators([])
-
     // Visit questions
     setServices([])
     setUnhoused('')
@@ -289,13 +264,11 @@ function App() {
     setPersonSurvived('')
     setNarcanGiven('')
     setOverdoseZip('')
-
     // Naloxone
     setNxQuantity('')
     setNxCustomQty('')
     setNxKitType('Naloxone Nasal Spray')
   }
-
   // --- Reusable Radio Group -------------------------------------
   const RadioGroup = ({
     name, options, value, onChange,
@@ -311,11 +284,9 @@ function App() {
       ))}
     </div>
   )
-
   const YNP = ({ name, value, onChange }: { name: string; value: string; onChange: (v: string) => void }) => (
     <RadioGroup name={name} options={['Yes', 'No', 'Prefer not to say']} value={value} onChange={onChange} />
   )
-
   // --- Naloxone quantity display ---------------------------------
   const nxCaseCount = Number(nxQuantity) || 0
   const nxSingleCount = Number(nxCustomQty) || 0
@@ -323,86 +294,164 @@ function App() {
     nxCaseCount > 0 ? `${nxCaseCount} case${nxCaseCount > 1 ? 's' : ''} (${nxCaseCount * 12} units)` : '',
     nxSingleCount > 0 ? `${nxSingleCount} single${nxSingleCount > 1 ? 's' : ''}` : '',
   ].filter(Boolean).join(' + ')
-
   return (
     <div className="app">
-
       {/* -- SCREEN 1: SIGN-IN ----------------------------------- */}
       {screen === 'signin' && (
         <div className="screen signin-screen">
           <div className="header">
             <div className="org-badge">MANO</div>
             <h1 className="app-title">MANO</h1>
-            <p className="app-subtitle">Haven Check-In</p>
             <p className="app-tagline">Private by default. Transparent by choice.</p>
           </div>
 
-          <div className="card">
-            <h2 className="card-title">Welcome</h2>
-            <p className="card-desc">Your visit is private. We collect only what is required by our funders 
-              and you control what gets shared.</p>
-
-            <div className="section-label">Returning Participant</div>
-            <div className="input-row">
-              <input
-                className="input"
-                type="text"
-                placeholder="Enter your card number"
-                value={cardNumber}
-                onChange={e => setCardNumber(e.target.value)}
-              />
-              <button
-                className="btn btn-secondary"
-                onClick={handleCardCheckIn}
-                disabled={!cardNumber.trim() || isLoading}
-              >
-                Check In
-              </button>
-            </div>
-
-            {error && (
-              <p style={{ color: '#EF4444', fontSize: '13px', marginTop: '8px' }}>
-                {error}
-              </p>
-            )}
-
-            <div className="divider"><span>or</span></div>
-
-            <div className="section-label">First Visit?</div>
-            <div className="name-row">
-              <input
-                className="input"
-                type="text"
-                placeholder="First name (optional)"
-                value={firstName}
-                disabled={preferNotName}
-                onChange={e => setFirstName(e.target.value)}
-              />
-              <label className="prefer-not">
-                <input
-                  type="checkbox"
-                  checked={preferNotName}
-                  onChange={e => {
-                    setPreferNotName(e.target.checked)
-                    if (e.target.checked) setFirstName('')
-                  }}
-                />
-                Prefer not to say
-              </label>
-            </div>
-
-            <button className="btn btn-primary" onClick={handleNewParticipant}>
-              Begin Enrollment
-            </button>
+          {/* -- TABS -- */}
+          <div style={{
+            display: 'flex', borderBottom: '1px solid #1E293B',
+            marginBottom: '0', background: '#0F172A',
+          }}>
+            <button
+              onClick={() => { setActiveTab('checkin'); setError(null); setCardNumber('') }}
+              style={{
+                flex: 1, padding: '12px', border: 'none', cursor: 'pointer',
+                background: activeTab === 'checkin' ? '#1E293B' : 'transparent',
+                color: activeTab === 'checkin' ? '#0D9488' : '#64748B',
+                borderBottom: activeTab === 'checkin' ? '2px solid #0D9488' : '2px solid transparent',
+                fontSize: '13px', fontFamily: 'monospace', fontWeight: 600,
+              }}
+            >{'\ud83c\udfe5'} Participant Check-In</button>
+            <button
+              onClick={() => { setActiveTab('naloxone'); setError(null); setCardNumber('') }}
+              style={{
+                flex: 1, padding: '12px', border: 'none', cursor: 'pointer',
+                background: activeTab === 'naloxone' ? '#1E293B' : 'transparent',
+                color: activeTab === 'naloxone' ? '#0891B2' : '#64748B',
+                borderBottom: activeTab === 'naloxone' ? '2px solid #0891B2' : '2px solid transparent',
+                fontSize: '13px', fontFamily: 'monospace', fontWeight: 600,
+              }}
+            >{'\ud83d\udc89'} Naloxone Hub</button>
           </div>
 
+          {/* -- TAB: PARTICIPANT CHECK-IN -- */}
+          {activeTab === 'checkin' && (
+            <div className="card">
+              <h2 className="card-title">Welcome</h2>
+              <p className="card-desc">Your visit is private. We collect only what is required by our funders
+                and you control what gets shared.</p>
+
+              <div className="section-label">Returning Participant</div>
+              <div className="input-row">
+                <input
+                  className="input"
+                  type="text"
+                  placeholder="HC-000001"
+                  value={cardNumber}
+                  onChange={e => {
+                    const raw = e.target.value.toUpperCase()
+                    const match = raw.match(/^([A-Z]+)-(\d+)$/)
+                    if (match) {
+                      setCardNumber(`${match[1]}-${match[2].padStart(6, '0')}`)
+                    } else {
+                      setCardNumber(raw)
+                    }
+                  }}
+                />
+                <button
+                  className="btn btn-secondary"
+                  onClick={handleCardCheckIn}
+                  disabled={!cardNumber.trim() || isLoading}
+                >{isLoading ? '...' : 'Check In'}</button>
+              </div>
+
+              {error && (
+                <p style={{ color: '#EF4444', fontSize: '13px', marginTop: '8px' }}>
+                  {error}
+                </p>
+              )}
+
+              <div className="divider"><span>or</span></div>
+
+              <div className="section-label">First Visit?</div>
+              <div className="name-row">
+                <input
+                  className="input"
+                  type="text"
+                  placeholder="First name (optional)"
+                  value={firstName}
+                  disabled={preferNotName}
+                  onChange={e => setFirstName(e.target.value)}
+                />
+                <label className="prefer-not">
+                  <input
+                    type="checkbox"
+                    checked={preferNotName}
+                    onChange={e => {
+                      setPreferNotName(e.target.checked)
+                      if (e.target.checked) setFirstName('')
+                    }}
+                  />
+                  Prefer not to say
+                </label>
+              </div>
+
+              <button className="btn btn-primary" onClick={handleNewParticipant}>
+                Begin Enrollment
+              </button>
+            </div>
+          )}
+
+          {/* -- TAB: NALOXONE HUB -- */}
+          {activeTab === 'naloxone' && (
+            <div className="card">
+              <h2 className="card-title">Naloxone Hub</h2>
+              <p className="card-desc">Region 10 distribution. Enter your organization card number to record a pickup.</p>
+
+              <div className="section-label">Organization Card</div>
+              <div className="input-row">
+                <input
+                  className="input"
+                  type="text"
+                  placeholder="NX-000001"
+                  value={cardNumber}
+                  onChange={e => {
+                    const raw = e.target.value.toUpperCase()
+                    const match = raw.match(/^([A-Z]+)-(\d+)$/)
+                    if (match) {
+                      setCardNumber(`${match[1]}-${match[2].padStart(6, '0')}`)
+                    } else {
+                      setCardNumber(raw)
+                    }
+                  }}
+                />
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    if (cardNumber.trim().toUpperCase().startsWith('NX-')) {
+                      setUserType('naloxone')
+                      setScreen('naloxone')
+                    } else {
+                      setError('Please enter a valid NX- card number')
+                    }
+                  }}
+                  disabled={!cardNumber.trim() || isLoading}
+                >Continue</button>
+              </div>
+
+              {error && (
+                <p style={{ color: '#EF4444', fontSize: '13px', marginTop: '8px' }}>
+                  {error}
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="privacy-note">
-             Your identity is protected by zero-knowledge cryptography.
+            Your identity is protected by zero-knowledge cryptography.
             No one can extract your personal information from this system.
           </div>
 
           <div className="session-info">
-            <span>Haven Check-In  MANO</span>
+            <span>Haven Check-In {'\u2022'} MANO</span>
             <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
           </div>
         </div>
@@ -414,7 +463,6 @@ function App() {
             <div className="org-badge">MANO</div>
             <h1 className="app-title">MANO</h1>
           </div>
-
           <div className="card">
             <h2 className="card-title">42 CFR Part 2  Confidentiality Notice</h2>
             <div className="disclosure-text">
@@ -423,7 +471,6 @@ function App() {
               <p>A violation of the federal law and regulations by a program is a crime. Suspected violations may be reported to appropriate authorities in accordance with federal regulations.</p>
               <p>Federal law and regulations do not protect any information about a crime committed by a patient either at the program or against any person who works for the program or about any threat to commit such a crime.</p>
             </div>
-
             <div className="consent-block">
               <p className="consent-label">By signing below, you acknowledge that you have received and understand this notice.</p>
               <div className="signature-wrapper">
@@ -436,7 +483,6 @@ function App() {
               {signed && <button className="btn-clear" onClick={clearSignature}>Clear signature</button>}
               <p className="consent-date">Date: {new Date().toLocaleDateString()}</p>
             </div>
-
             <div className="btn-row">
               <button className="btn btn-ghost" onClick={() => setScreen('signin')}>Back</button>
               <button className="btn btn-primary" onClick={() => setScreen('demographics')} disabled={!signed}>
@@ -447,7 +493,6 @@ function App() {
           </div>
         </div>
       )}
-
       {/* -- SCREEN 3A: DEMOGRAPHICS ----------------------------- */}
       {screen === 'demographics' && (
         <div className="screen demographics-screen">
@@ -455,14 +500,11 @@ function App() {
             <div className="org-badge">MANO</div>
             <h1 className="app-title">MANO</h1>
           </div>
-
           <div className="card">
             <h2 className="card-title">Enrollment Information</h2>
             <p className="card-desc">This information is collected once at enrollment. Fields marked <span className="voluntary">voluntary</span> are never required.</p>
-
             <div className="form-section">
               <div className="form-section-title">TEPAP Eligibility</div>
-
               <div className="field-group">
                 <label className="field-label">Address <span className="req">*</span></label>
                 <input className="input" type="text" placeholder="Street address" value={address} disabled={preferNotAddress} onChange={e => setAddress(e.target.value)} />
@@ -471,12 +513,10 @@ function App() {
                   Prefer not to say / Unhoused
                 </label>
               </div>
-
               <div className="field-group">
                 <label className="field-label">Zip Code</label>
                 <input className="input input-sm" type="text" placeholder="79901" maxLength={5} value={zipCode} onChange={e => setZipCode(e.target.value)} />
               </div>
-
               <div className="field-group">
                 <label className="field-label">Phone / Email <span className="voluntary">voluntary</span></label>
                 <input className="input" type="text" placeholder="Phone number or email" value={phone} disabled={preferNotPhone} onChange={e => setPhone(e.target.value)} />
@@ -485,12 +525,10 @@ function App() {
                   Prefer not to provide
                 </label>
               </div>
-
               <div className="field-group">
                 <label className="field-label"># of family members in household</label>
                 <input className="input input-sm" type="number" min={1} placeholder="e.g. 1" value={householdSize} onChange={e => setHouseholdSize(e.target.value)} />
               </div>
-
               <div className="field-group">
                 <label className="field-label">Categorical Eligibility (check all that apply)</label>
                 <div className="checkbox-grid">
@@ -502,7 +540,6 @@ function App() {
                   ))}
                 </div>
               </div>
-
               <div className="field-group">
                 <label className="field-label">
                   Household Income
@@ -546,26 +583,21 @@ function App() {
                   </div>
                 )}
               </div>
-
               <div className="field-group">
                 <label className="field-label">Household Crisis?</label>
                 <RadioGroup name="householdCrisis" options={['Yes', 'No']} value={householdCrisis} onChange={setHouseholdCrisis} />
               </div>
             </div>
-
             <div className="form-section">
               <div className="form-section-title">Demographics <span className="voluntary"> all voluntary</span></div>
-
               <div className="field-group">
                 <label className="field-label">Age Group <span className="voluntary">voluntary</span></label>
                 <RadioGroup name="ageGroup" options={['Under 17', '1824', '2544', '4564', '65+', 'Prefer not to say']} value={ageGroup} onChange={setAgeGroup} />
               </div>
-
               <div className="field-group">
                 <label className="field-label">Gender <span className="voluntary">voluntary</span></label>
                 <RadioGroup name="gender" options={['Male', 'Female', 'Other', 'Prefer not to identify']} value={gender} onChange={setGender} />
               </div>
-
               <div className="field-group">
                 <label className="field-label">Race (select all that apply) <span className="voluntary">voluntary</span></label>
                 <div className="checkbox-grid">
@@ -577,12 +609,10 @@ function App() {
                   ))}
                 </div>
               </div>
-
               <div className="field-group">
                 <label className="field-label">Ethnicity <span className="voluntary">voluntary</span></label>
                 <RadioGroup name="ethnicity" options={['Hispanic / Latino', 'Non-Hispanic', 'Unknown / Prefer not to say']} value={ethnicity} onChange={setEthnicity} />
               </div>
-
               <div className="field-group">
                 <label className="field-label">Insurance <span className="voluntary">voluntary</span></label>
                 <div className="checkbox-grid">
@@ -594,7 +624,6 @@ function App() {
                   ))}
                 </div>
               </div>
-
               <div className="field-group">
                 <label className="field-label">Other Indicators (check all that apply) <span className="voluntary">voluntary</span></label>
                 <div className="checkbox-grid">
@@ -607,7 +636,6 @@ function App() {
                 </div>
               </div>
             </div>
-
             <div className="btn-row">
               <button className="btn btn-ghost" onClick={() => setScreen('disclosure')}>Back</button>
               <button className="btn btn-primary" onClick={handleDemographicsContinue} disabled={isLoading}>
@@ -617,7 +645,6 @@ function App() {
           </div>
         </div>
       )}
-
       {/* -- SCREEN 3B: VISIT QUESTIONS -------------------------- */}
       {screen === 'questionnaire' && (
         <div className="screen questionnaire-screen">
@@ -625,14 +652,11 @@ function App() {
             <div className="org-badge">MANO</div>
             <h1 className="app-title">MANO</h1>
           </div>
-
           <div className="card">
             <h2 className="card-title">Today's Visit</h2>
             <p className="card-desc voluntary-note">Questions marked <span className="voluntary">voluntary</span> are never required. Answer only what you are comfortable with.</p>
-
             <div className="form-section">
               <div className="form-section-title">Services Today</div>
-
               <div className="field-group">
                 <label className="field-label">Services received today <span className="req">*</span></label>
                 <div className="checkbox-grid">
@@ -644,52 +668,42 @@ function App() {
                   ))}
                 </div>
               </div>
-
               <div className="field-group">
                 <label className="field-label">Are you currently in an unhoused situation? <span className="voluntary">voluntary</span></label>
                 <YNP name="unhoused" value={unhoused} onChange={setUnhoused} />
               </div>
             </div>
-
             <div className="form-section cfr-section">
               <div className="form-section-title">Substance Use <span className="cfr-badge">42 CFR Part 2 Protected</span></div>
               <p className="cfr-note">Your answers are protected under federal law. This information cannot be shared without your written consent.</p>
-
               {userType === 'returning' && (opioidUser || stimulantUser || referredToMAT || onMAT) && (
                 <p className="prefill-note">
                   u{2713} Your answers from your last visit are pre-filled. Update anything that has changed.
                 </p>
               )}
-
               <div className="field-group">
                 <label className="field-label">Are you an opioid user? <span className="voluntary">voluntary</span></label>
                 <YNP name="opioidUser" value={opioidUser} onChange={setOpioidUser} />
               </div>
-
               <div className="field-group">
                 <label className="field-label">Are you a stimulant user? <span className="voluntary">voluntary</span></label>
                 <YNP name="stimulantUser" value={stimulantUser} onChange={setStimulantUser} />
               </div>
-
               <div className="field-group">
                 <label className="field-label">Have you been referred to MAT (Medication Assisted Treatment)? <span className="voluntary">voluntary</span></label>
                 <YNP name="referredToMAT" value={referredToMAT} onChange={setReferredToMAT} />
               </div>
-
               <div className="field-group">
                 <label className="field-label">Are you currently on MAT? <span className="voluntary">voluntary</span></label>
                 <YNP name="onMAT" value={onMAT} onChange={setOnMAT} />
               </div>
             </div>
-
             <div className="form-section">
               <div className="form-section-title">Overdose Response</div>
-
               <div className="field-group">
                 <label className="field-label">Did you witness an overdose today? <span className="voluntary">voluntary</span></label>
                 <YNP name="overdoseWitnessed" value={overdoseWitnessed} onChange={setOverdoseWitnessed} />
               </div>
-
               {overdoseWitnessed === 'Yes' && (
                 <>
                   <div className="field-group follow-up">
@@ -702,7 +716,6 @@ function App() {
                   </div>
                 </>
               )}
-
               {overdoseWitnessed === 'Yes' && (
                 <>
                   <div className="field-group follow-up">
@@ -719,7 +732,6 @@ function App() {
                 </>
               )}
             </div>
-
             <div className="btn-row">
               <button className="btn btn-ghost" onClick={() => {
                 if (userType === 'returning') setScreen('signin')
@@ -734,7 +746,6 @@ function App() {
           </div>
         </div>
       )}
-
       {/* -- SCREEN NX: NALOXONE PICKUP -------------------------- */}
       {screen === 'naloxone' && (
         <div className="screen naloxone-screen">
@@ -744,10 +755,8 @@ function App() {
             <p className="app-subtitle">Naloxone Hub  Region 10</p>
             <p className="app-tagline">Recovery Alliance El Paso</p>
           </div>
-
           <div className="card">
             <h2 className="card-title">Naloxone Pickup</h2>
-
             <div className="nx-card-info">
               <div className="nx-info-row">
                 <span className="nx-info-label">Card</span>
@@ -773,7 +782,6 @@ function App() {
           </div>
         </div>
       )}
-
       {/* -- SCREEN NX-CONFIRM ----------------------------------- */}
       {screen === 'naloxone-confirmation' && (
         <div className="screen confirmation-screen">
@@ -781,12 +789,10 @@ function App() {
             <div className="org-badge nx-badge">NX HUB</div>
             <h1 className="app-title">MANO</h1>
           </div>
-
           <div className="card confirmation-card">
             <div className="check-icon nx-check-icon">{""}</div>
             <h2 className="card-title">Pickup Recorded</h2>
             <p className="card-desc">This naloxone pickup has been logged to the Region 10 distribution record.</p>
-
             <div className="nx-summary">
               <div className="nx-summary-row">
                 <span className="nx-summary-label">Card</span>
@@ -801,12 +807,10 @@ function App() {
                 <span className="nx-summary-value">{new Date().toLocaleDateString()}</span>
               </div>
             </div>
-
             <button className="btn btn-primary" onClick={resetAll}>Done</button>
           </div>
         </div>
       )}
-
       {/* -- SCREEN 4: CONFIRMATION ------------------------------ */}
       {screen === 'confirmation' && (
         <div className="screen confirmation-screen">
@@ -814,18 +818,15 @@ function App() {
             <div className="org-badge">MANO</div>
             <h1 className="app-title">MANO</h1>
           </div>
-
           <div className="card confirmation-card">
             <div className="check-icon">{""}</div>
             <h2 className="card-title">Check-In Complete</h2>
             <p className="card-desc">Your visit has been recorded privately. Your identity was never revealed.</p>
-
             <div className="credential-note">
                This check-in has been added to your anonymous attendance credential.
               You can use it to verify program participation for housing, employment,
               or reentry  on your terms.
             </div>
-
             {userType === 'new' && (
               <div className="card-number-issued">
                 <span className="card-label">Your Card Number</span>
@@ -833,15 +834,12 @@ function App() {
                 <span className="card-instruction">Write this down or receive a physical card from staff.</span>
               </div>
             )}
-
             <button className="btn btn-primary" onClick={resetAll}>Done</button>
           </div>
         </div>
       )}
-
       {/* -- SCREEN: DASHBOARD ---------------------------------- */}
       {screen === 'dashboard' && <Dashboard />}
-
       {/* -- BOTTOM NAV ----------------------------------------- */}
       {(screen === 'signin' || screen === 'dashboard') && (
         <div style={{
@@ -871,5 +869,4 @@ function App() {
     </div>
   )
 }
-
 export default App
