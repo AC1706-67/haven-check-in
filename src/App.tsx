@@ -50,7 +50,6 @@ function App() {
   // --- Naloxone Hub (NX- cards) ---------------------------------
   const [nxQuantity, setNxQuantity] = useState('')
   const [nxCustomQty, setNxCustomQty] = useState('')
-  const [nxKitType, setNxKitType] = useState('Naloxone Nasal Spray')
   // --- Confirmation ---------------------------------------------
   const [issuedCard, setIssuedCard] = useState('')
   const [participantId, setParticipantId] = useState<string | null>(null)
@@ -267,7 +266,6 @@ function App() {
     // Naloxone
     setNxQuantity('')
     setNxCustomQty('')
-    setNxKitType('Naloxone Nasal Spray')
   }
   // --- Reusable Radio Group -------------------------------------
   const RadioGroup = ({
